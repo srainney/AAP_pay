@@ -1,5 +1,6 @@
 # Twilio Serverless
 .twiliodeployinfo
+assets/*
 
 # Logs
 logs
