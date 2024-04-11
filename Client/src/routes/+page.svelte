@@ -1,15 +1,20 @@
 <script>
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
-  import { env } from "$env/dynamic/public";
-  export let data;
-  import axios from "axios";
+  import {
+    PUBLIC_SERVER_URL,
+    PUBLIC_PAYMENT_CONNECTOR,
+    PUBLIC_PAYMENT_CURRENCY,
+    PUBLIC_PAYMENT_TOKEN_TYPE,
+    PUBLIC_PAYMENT_CAPTURE_ORDER,
+    PUBLIC_TWILIO_TOKEN,
+  } from "$env/static/public";
 
   let callSid = "";
   let paymentSid = "";
-  let chargeAmount = 0;
+
   // Convert Capture Order string to an Array, removing whitespace
-  const captureOrderArray = env.PUBLIC_PAYMENT_CAPTURE_ORDER.split(",").map((item) => item.trim());
+  const captureOrderArray = PUBLIC_PAYMENT_CAPTURE_ORDER.split(",").map((item) => item.trim());
   let showPleaseWait = false;
 
   onMount(() => {
@@ -26,11 +31,6 @@
       try {
         let bodyData = {
           callSid: callSid,
-          chargeAmount: chargeAmount,
-          tokenType: env.PUBLIC_PAYMENT_TOKEN_TYPE,
-          currency: env.PUBLIC_PAYMENT_CURRENCY,
-          paymentConnector: env.PUBLIC_PAYMENT_CONNECTOR,
-          captureOrder: captureOrderArray,
         };
 
         const response = await fetch("/payment/startCapture", {
