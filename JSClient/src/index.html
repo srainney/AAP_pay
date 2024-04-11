@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Twilio Call Capture</title>
+</head>
+<body>
+    <h1>Twilio Call Capture</h1>
+
+    <label for="callSid">Call SID:</label>
+    <input type="text" id="callSid" name="callSid">
+
+    <button onclick="startCapture()">Start Capture</button>
+
+    <script>
+        async function startCapture() {
+            var callSid = document.getElementById("callSid").value;
+            var chargeAmount= 0;
+            var currency= "AUD";
+
+            try {
+                // Make a POST request to /aap/StartCapture with the callSid as the JSON body
+                const response = await fetch('/aap/startCapture', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        callSid: callSid,
+                        chargeAmount: chargeAmount,
+                        currency:currency
+                    })
+                });
+                const responseData = await response.json();
+                console.log('responseData:',responseData);
+                const paymentSid = responseData.sid;
+
+                // redirect the browser to payment.html passing in the callSid and paymentSid as URL parameters
+                window.location.href = `/payment.html?callSid=${callSid}&paymentSid=${paymentSid}`;
+                
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

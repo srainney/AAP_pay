@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Payment Details</title>
+  <!-- <script src="https://cdn.jsdelivr.net/npm/dotenv@16.4.5/lib/main.min.js"></script> -->
+  <!-- <script type="text/javascript" src="//media.twiliocdn.com/sdk/js/sync/v3.2/twilio-sync.min.js"></script> -->
+  <script type="module" src="payment.js"></script>
+</head>
+</head>
+<body>
+    <h2>Call SID: <span id="callSid"></span></h2>
+    <h2>Payment SID: <span id="paymentSid"></span></h2>
+    
+    <div class="payment-details">
+        <label for="card">Card:</label>
+        <input type="text" id="card" readonly>
+        <button onclick="resetCardInput()">Reset</button>
+    </div>
+    
+    <div class="payment-details">
+        <label for="cvc">CVC:</label>
+        <input type="text" id="cvc" readonly>
+        <button onclick="resetCvcInput()">Reset</button>
+    </div>
+    
+    <div class="payment-details">
+        <label for="date">Date:</label>
+        <input type="text" id="date" readonly>
+        <button onclick="resetDateInput()">Reset</button>
+    </div>
+
+    <div class="buttons">
+        <button onclick="submit()">Submit</button>
+        <button onclick="cancel()">Cancel</button>
+    </div>
+</body>
+
+</html>
