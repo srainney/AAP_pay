@@ -10,6 +10,13 @@
  */
 exports.handler = async (context, event, callback) => {
 
+  // Add CORS handling headers
+  const twilioResponse = new Twilio.Response();
+
+  twilioResponse.appendHeader("Access-Control-Allow-Origin", "*");
+  twilioResponse.appendHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
+  twilioResponse.appendHeader("Content-Type", "application/json");
+
   const restClient = context.getTwilioClient();
 
   try {
@@ -29,7 +36,8 @@ exports.handler = async (context, event, callback) => {
 
     } catch (error) {
       console.error(`Error setting up ${context.SYNC_PAY_MAP_NAME}: ${error}`);
-      return callback(`Error setting up ${context.SYNC_PAY_MAP_NAME}: ${error}`, null);
+      twilioResponse.setStatusCode(400);
+      return callback(twilioResponse.setBody(`Error setting up ${context.SYNC_PAY_MAP_NAME}: ${error}`));
     }
 
     // Create the UUI Sync Map
@@ -38,17 +46,16 @@ exports.handler = async (context, event, callback) => {
         .syncMaps
         .create({ uniqueName: context.SYNC_UUI_MAP_NAME });
       console.info(`Sync Map ${context.SYNC_UUI_MAP_NAME} created`);
-
-
     } catch (error) {
       console.error(`Error setting up ${context.SYNC_UUI_MAP_NAME}: ${error}`);
-      return callback(`Error setting up ${context.SYNC_UUI_MAP_NAME}: ${error}`, null);
+      twilioResponse.setStatusCode(400);
+      return callback(twilioResponse.setBody(`Error setting up ${context.SYNC_UUI_MAP_NAME}: ${error}`));
     }
-
-    return callback(null, "Sync Services setup complete");
-
+    twilioResponse.setBody("Sync Services setup complete");
+    return callback(null, twilioResponse);
   } catch (error) {
     console.error(`Error setting up Sync Service: ${error}`);
-    return callback(`Error setting up Sync Service ${context.PAY_SYNC_SERVICE_NAME}: ${error}`, null);
+    twilioResponse.setStatusCode(400);
+    return callback(twilioResponse.setBody(`Error setting up Sync Service ${context.PAY_SYNC_SERVICE_NAME}: ${error}`));
   }
 };

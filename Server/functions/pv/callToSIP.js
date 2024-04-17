@@ -10,6 +10,14 @@
  * 
  */
 exports.handler = async (context, event, callback) => {
+
+  // Add CORS handling headers
+  const twilioResponse = new Twilio.Response();
+
+  twilioResponse.appendHeader("Access-Control-Allow-Origin", "*");
+  twilioResponse.appendHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
+  twilioResponse.appendHeader("Content-Type", "application/json");
+
   const restClient = context.getTwilioClient();
 
   // Write the incoming PSTN call's Call SID as the UUI into Sync
@@ -34,10 +42,10 @@ exports.handler = async (context, event, callback) => {
         statusCallbackMethod: 'POST'
       },
       sipTo);
-
-    return callback(null, voiceResponse);
+    twilioResponse.setBody(voiceResponse);
+    return callback(null, twilioResponse);
   } catch (error) {
-    // Some other error occurred
-    return callback(`Error with callToSIP: ${error}`, null);
+    twilioResponse.setStatusCode(400);
+    return callback(twilioResponse.setBody(`Error with callToSIP: ${error}`));
   }
 };

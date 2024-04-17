@@ -41,6 +41,13 @@
  */
 exports.handler = async (context, event, callback) => {
 
+  // Add CORS handling headers
+  const twilioResponse = new Twilio.Response();
+
+  twilioResponse.appendHeader("Access-Control-Allow-Origin", "*");
+  twilioResponse.appendHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
+  twilioResponse.appendHeader("Content-Type", "application/json");
+
   const restClient = context.getTwilioClient();
 
   // Update it under a try/catch and if the Item does not exist, create it first and then add item
@@ -63,8 +70,10 @@ exports.handler = async (context, event, callback) => {
           ttl: 43200  // 12 hours
         });
     } catch (error) {
-      return callback(`Error creating Pay Map: ${error}`, null);
+      twilioResponse.setStatusCode(400);
+      return callback(twilioResponse.setBody(`Error creating Pay Map: ${error}`));
     }
-    return callback(null, event.Sid);
+    twilioResponse.setBody(event.Sid);
+    return callback(null, twilioResponse);
   }
 };

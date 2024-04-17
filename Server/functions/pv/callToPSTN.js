@@ -8,6 +8,13 @@
  */
 exports.handler = async (context, event, callback) => {
 
+  // Add CORS handling headers
+  const twilioResponse = new Twilio.Response();
+
+  twilioResponse.appendHeader("Access-Control-Allow-Origin", "*");
+  twilioResponse.appendHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
+  twilioResponse.appendHeader("Content-Type", "application/json");
+
   const voiceResponse = new Twilio.twiml.VoiceResponse();
 
   let to = event.To.match(/^sip:((\+)?[0-9]+)@(.*)/)[1];  // Extract the number from the SIP URI
@@ -29,8 +36,10 @@ exports.handler = async (context, event, callback) => {
       },
       to);
 
-    return callback(null, voiceResponse);
+    twilioResponse.setBody(voiceResponse);
+    return callback(null, twilioResponse);
   } catch (error) {
-    return callback(`Error with OutboundHandler: ${error}`, null);
+    twilioResponse.setStatusCode(400);
+    return callback(twilioResponse.setBody(`Error with callToPSTN: ${error}`));
   }
 };

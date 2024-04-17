@@ -6,6 +6,13 @@ exports.handler = async (context, event, callback) => {
 
   console.log("Server startCapture event: ", JSON.stringify(event, null, 4));
 
+  // Add CORS handling headers
+  const twilioResponse = new Twilio.Response();
+
+  twilioResponse.appendHeader("Access-Control-Allow-Origin", "*");
+  twilioResponse.appendHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
+  twilioResponse.appendHeader("Content-Type", "application/json");
+
   // Get a reference to the Twilio REST helper library
   const twilioClient = context.getTwilioClient();
 
@@ -31,8 +38,11 @@ exports.handler = async (context, event, callback) => {
 
   try {
     const paymentSession = await twilioClient.calls(event.callSid).payments.create(sessionData);
-    return callback(null, paymentSession);
+
+    twilioResponse.setBody(paymentSession);
+    return callback(null, twilioResponse);
   } catch (error) {
-    return callback(`Error with StartCapture for callSID: ${event.callSid} - ${error}`, null);
+    twilioResponse.setStatusCode(400);
+    return callback(twilioResponse.setBody(`Error with StartCapture for callSID: ${event.callSid} - ${error}`));
   }
 };

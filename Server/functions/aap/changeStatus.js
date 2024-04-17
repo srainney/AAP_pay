@@ -1,5 +1,13 @@
 exports.handler = async (context, event, callback) => {
 
+  // Add CORS handling headers
+  const twilioResponse = new Twilio.Response();
+
+  twilioResponse.appendHeader("Access-Control-Allow-Origin", "*");
+  twilioResponse.appendHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
+  twilioResponse.appendHeader("Content-Type", "application/json");
+
+
   // Get a reference to the Twilio REST helper library
   const twilioClient = context.getTwilioClient();
 
@@ -15,8 +23,11 @@ exports.handler = async (context, event, callback) => {
       idempotencyKey: event.callSid + Date.now().toString(),
       statusCallback: "/paySyncUpdate",
     });
-    return callback(paymentSession.sid, null);   // Pay SID
+
+    twilioResponse.setBody(paymentSession.sid);
+    return callback(null, twilioResponse); // Pay SID
   } catch (error) {
-    return callback(null, `Error with changeStatus for callSID: ${event.callSid} - {error}`);
+    twilioResponse.setStatusCode(400);
+    return callback(twilioResponse.setBody(`Error with changeStatus for callSID: ${event.callSid} - {error}`));
   }
 };

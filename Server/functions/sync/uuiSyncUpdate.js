@@ -15,6 +15,13 @@ exports.handler = async (context, event, callback) => {
 
   console.info(`uuiSyncUpdate: Dialing ${event.To} with Caller ID ${event.From} for Call SID: ${event.CallSid} with UUI ${event.UUI}`);
 
+  // Add CORS handling headers
+  const twilioResponse = new Twilio.Response();
+
+  twilioResponse.appendHeader("Access-Control-Allow-Origin", "*");
+  twilioResponse.appendHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
+  twilioResponse.appendHeader("Content-Type", "application/json");
+
   const restClient = context.getTwilioClient();
 
   // console.log("uuiSyncUpdate: event: ", event);
@@ -52,11 +59,14 @@ exports.handler = async (context, event, callback) => {
           },
           ttl: 43200  // Keep the UUI item for 12 hours
         });
-      return callback(null, uui);
+      twilioResponse.setBody(uui);
+      return callback(null, twilioResponse);
     } catch (error) {
-      return callback(`Error creating UUI Map: ${error}`, null);
+      twilioResponse.setStatusCode(400);
+      return callback(twilioResponse.setBody(`Error creating UUI Map: ${error}`));
     }
   } else {
-    return callback('No UUI from call, so cannot establish Pay', null);
+    twilioResponse.setStatusCode(400);
+    return callback(twilioResponse.setBody('No UUI from call, so cannot establish Pay'));
   }
 };
