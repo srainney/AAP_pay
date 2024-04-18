@@ -11,13 +11,6 @@
  */
 exports.handler = async (context, event, callback) => {
 
-  // Add CORS handling headers
-  const twilioResponse = new Twilio.Response();
-
-  twilioResponse.appendHeader("Access-Control-Allow-Origin", "*");
-  twilioResponse.appendHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
-  twilioResponse.appendHeader("Content-Type", "application/json");
-
   const restClient = context.getTwilioClient();
 
   // Write the incoming PSTN call's Call SID as the UUI into Sync
@@ -38,14 +31,12 @@ exports.handler = async (context, event, callback) => {
       {
         // Only update Sync when call is answered
         statusCallbackEvent: 'answered',
-        statusCallback: `https://des.au.ngrok.io/sync/uuiSyncUpdate?CallDirection=toSIP&UUI=${UUI}`,
+        statusCallback: context.SERVER_URL + `/sync/uuiSyncUpdate?CallDirection=toSIP&UUI=${UUI}`,
         statusCallbackMethod: 'POST'
       },
       sipTo);
-    twilioResponse.setBody(voiceResponse);
-    return callback(null, twilioResponse);
+    return callback(null, voiceResponse);
   } catch (error) {
-    twilioResponse.setStatusCode(400);
-    return callback(twilioResponse.setBody(`Error with callToSIP: ${error}`));
+    return callback(`Error with callToSIP: ${error}`);
   }
 };

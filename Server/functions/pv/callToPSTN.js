@@ -8,12 +8,7 @@
  */
 exports.handler = async (context, event, callback) => {
 
-  // Add CORS handling headers
-  const twilioResponse = new Twilio.Response();
-
-  twilioResponse.appendHeader("Access-Control-Allow-Origin", "*");
-  twilioResponse.appendHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
-  twilioResponse.appendHeader("Content-Type", "application/json");
+  console.info(`callToPSTN: Dialing ${event.To} with Caller ID ${event.From} for Call SID: ${event.CallSid} with UUI ${event.UUI}`);
 
   const voiceResponse = new Twilio.twiml.VoiceResponse();
 
@@ -27,19 +22,19 @@ exports.handler = async (context, event, callback) => {
   try {
     console.info(`Dialing ${to} with Caller ID ${from} for Call SID: ${event.CallSid} with UUI ${UUI}`);
     const dial = voiceResponse.dial({ callerId: from });
+    console.log(`Dialing {dial} ${dial}`);
     dial.number(
       {
         // Only update Sync when call is answered
         statusCallbackEvent: 'answered',
-        statusCallback: `https://des.au.ngrok.io/sync/uuiSyncUpdate?CallDirection=toPSTN&UUI=${UUI}`,
+        statusCallback: context.SERVER_URL + `/sync/uuiSyncUpdate?CallDirection=toPSTN&UUI=${UUI}`,
         statusCallbackMethod: 'POST'
       },
       to);
 
-    twilioResponse.setBody(voiceResponse);
-    return callback(null, twilioResponse);
+    console.log(`Dial set up`);
+    return callback(null, voiceResponse);
   } catch (error) {
-    twilioResponse.setStatusCode(400);
-    return callback(twilioResponse.setBody(`Error with callToPSTN: ${error}`));
+    return callback(`Error with callToPSTN: ${error}`);
   }
 };
