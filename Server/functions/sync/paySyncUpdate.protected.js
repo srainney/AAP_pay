@@ -41,13 +41,6 @@
  */
 exports.handler = async (context, event, callback) => {
 
-  // Add CORS handling headers
-  const twilioResponse = new Twilio.Response();
-
-  twilioResponse.appendHeader("Access-Control-Allow-Origin", "*");
-  twilioResponse.appendHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
-  twilioResponse.appendHeader("Content-Type", "application/json");
-
   const restClient = context.getTwilioClient();
 
   // Update it under a try/catch and if the Item does not exist, create it first and then add item
@@ -58,8 +51,9 @@ exports.handler = async (context, event, callback) => {
       .update({
         data: event
       });
+    console.log(`Updated Pay Map: ${event.Sid}`);
   } catch (error) {
-    // console.log("Item does not exist, so create it");
+    console.log("Item does not exist, so create it");
     try {
       await restClient.sync.services(context.PAY_SYNC_SERVICE_SID)
         .syncMaps(context.SYNC_PAY_MAP_NAME)
@@ -69,11 +63,13 @@ exports.handler = async (context, event, callback) => {
           data: event,
           ttl: 43200  // 12 hours
         });
+      console.log(`Created Pay Map: ${event.Sid} and data: ${event}`);
     } catch (error) {
-      twilioResponse.setStatusCode(400);
-      return callback(twilioResponse.setBody(`Error creating Pay Map: ${error}`));
+      console.error(`Error creating Pay Map: ${error}`);
+      return callback(`Error creating Pay Map: ${error}`);
     }
-    twilioResponse.setBody(event.Sid);
-    return callback(null, twilioResponse);
+    console.log(`Updated Pay Map: ${event.Sid}`);
+    return callback(null, event.Sid);
+
   }
 };
