@@ -4,13 +4,14 @@ The first thing to check is if there is actually an active call for the callSid.
 */
 exports.handler = async (context, event, callback) => {
 
-  console.log("Server startCapture event: ", JSON.stringify(event, null, 4));
-
+  console.log("Server startCapture");
+  // console.log("Server startCapture event: ", JSON.stringify(event, null, 4));
   // Add CORS handling headers
   const twilioResponse = new Twilio.Response();
 
   twilioResponse.appendHeader("Access-Control-Allow-Origin", "*");
-  twilioResponse.appendHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
+  twilioResponse.appendHeader("Access-Control-Allow-Methods", "GET, POST,OPTIONS");
+  twilioResponse.appendHeader('Access-Control-Allow-Headers', 'Content-Type');
   twilioResponse.appendHeader("Content-Type", "application/json");
 
   // Get a reference to the Twilio REST helper library
@@ -24,7 +25,8 @@ exports.handler = async (context, event, callback) => {
 
   const sessionData = {
     idempotencyKey: event.callSid + Date.now().toString(),
-    statusCallback: "/paySyncUpdate",
+    // statusCallback: "/Server/functions/sync/paySyncUpdate",
+    statusCallback: context.SERVER_URL + "/sync/paySyncUpdate",
     ...(event.chargeAmount === 0 ? { tokenType: event.tokenType } : {}),
     // tokenType: event.tokenType,
     chargeAmount: event.chargeAmount,
@@ -38,8 +40,8 @@ exports.handler = async (context, event, callback) => {
 
   try {
     const paymentSession = await twilioClient.calls(event.callSid).payments.create(sessionData);
-
     twilioResponse.setBody(paymentSession);
+    console.log("Server startCapture paymentSession: ", JSON.stringify(paymentSession, null, 4));
     return callback(null, twilioResponse);
   } catch (error) {
     twilioResponse.setStatusCode(400);

@@ -21,7 +21,8 @@ exports.handler = async (context, event, callback) => {
     const paymentSession = twilioClient.calls(event.callSid).payments(event.paymentSid).update({
       status: event.status,
       idempotencyKey: event.callSid + Date.now().toString(),
-      statusCallback: "/paySyncUpdate",
+      // statusCallback: "/sync/paySyncUpdate",
+      statusCallback: context.SERVER_URL + "/sync/paySyncUpdate",
     });
 
     twilioResponse.setBody(paymentSession.sid);
