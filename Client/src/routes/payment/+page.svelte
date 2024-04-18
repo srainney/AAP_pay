@@ -3,8 +3,20 @@
   import { goto } from "$app/navigation";
   import { onMount, onDestroy, beforeUpdate } from "svelte";
   import { PUBLIC_PAYMENT_CAPTURE_ORDER, PUBLIC_SERVER_URL } from "$env/static/public";
+  import { SyncClient } from "twilio-sync";
 
-  import axios from "axios";
+  // Styles:
+  import {
+    Container,
+    Card,
+    CardBody,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+    InputGroup,
+    InputGroupText,
+    Button,
+  } from "@sveltestrap/sveltestrap";
 
   let callSid = null;
   let paymentSid = null;
@@ -21,27 +33,36 @@
   let startedCapturing = false;
   let canSubmit = false;
   let maskedPayData = {
-    ExpirationDate: "-",
     PaymentCardNumber: "-",
     PaymentCardType: "-",
-    Required: "payment-card-number,expiration-date,security-code",
+    ExpirationDate: "-",
     SecurityCode: "-",
+    Required: "payment-card-number,expiration-date,security-code",
   };
-  /**
-   * @type {number | undefined}
-   */
-  let pollTimer;
+
+  // Sync Client
+  let syncClient = null;
+  let syncToken = "";
+  let payMap = null;
 
   // Handle Cancel click
-  const cancel = async function () {
+  const cancelSubmit = async function () {
     try {
       console.log("Cancel clicked");
-      // Now submit the card data
-      const response = await axios.post(PUBLIC_SERVER_URL + "/cancel-capture", {
-        callSid,
-        paymentSid,
+      const response = await fetch(PUBLIC_SERVER_URL + "/aap/changeStatus", {
+        method: "POST",
+        body: JSON.stringify({
+          callSid,
+          paymentSid,
+          status: "cancel",
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
-      console.log("Cancel response: ", response.data);
+      const responseJSON = await response.json();
+      console.log("Cancel response: ", responseJSON.data);
+
       // navigate to payments page
       goto(`/`);
     } catch (error) {
@@ -57,16 +78,30 @@
     try {
       console.log("Submit clicked");
       // Now submit the card data
-      const response = await axios.post(PUBLIC_SERVER_URL + "/finish-capture", {
-        callSid,
-        paymentSid,
+      const response = await fetch(PUBLIC_SERVER_URL + "/aap/changeStatus", {
+        method: "POST",
+        body: JSON.stringify({
+          callSid,
+          paymentSid,
+          status: "complete",
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
-      console.log("Submit response: ", response.data);
+      const responseJSON = await response.json();
+      console.log("Submit response: ", responseJSON.data);
     } catch (error) {
       // Log the error
       console.error("Error in submit: ", error);
     }
   };
+
+  const clearCard = function () {};
+
+  const clearCVC = function () {};
+
+  const clearDate = function () {};
 
   // This function scans the received maskedPayData and performs a few operations:
   // 1) Checks if the Required attribute is present
@@ -107,15 +142,21 @@
         captureOrder.shift();
         console.log("scanMaskedPayData captureOrder: ", captureOrder);
         // Call the next capture API
-        const newUrl = PUBLIC_SERVER_URL + "/" + captureOrder[0];
-        console.log("scanMaskedPayData newUrl: ", newUrl);
 
         try {
-          const result = await axios.post(newUrl, {
-            callSid,
-            paymentSid,
+          const response = await fetch(PUBLIC_SERVER_URL + "/aap/changeCapture", {
+            method: "POST",
+            body: JSON.stringify({
+              callSid,
+              paymentSid,
+              captureType: captureOrder[0],
+            }),
+            headers: {
+              "Content-Type": "application/json",
+            },
           });
-          console.log("scanMaskedPayData newUrl result: ", result.data);
+          const responseJSON = await response.json();
+          console.log("scanMaskedPayData response: ", responseJSON.data);
         } catch (error) {
           console.error("Error in scanMaskedPayData: ", error);
         }
@@ -138,209 +179,104 @@
     // Now start capturing the card
     try {
       console.log("onMount captureOrder[0]: ", captureOrder[0]);
-      const response = await axios.post(PUBLIC_SERVER_URL + "/" + captureOrder[0], {
-        callSid,
-        paymentSid,
+
+      // Set capture to first itme in array TODO: check if we actually need this?
+      const response = await fetch(PUBLIC_SERVER_URL + "/aap/changeCapture", {
+        method: "POST",
+        body: JSON.stringify({
+          callSid,
+          paymentSid,
+          captureType: captureOrder[0],
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
-      console.log("onMount response: ", response.data);
+      // console.log("onMount response: ", response);
+      console.log("onMount response: ", response);
+      const responseJSON = await response.json();
+      console.log("onMount responseJSON: ", JSON.stringify(responseJSON, null, 4));
     } catch (error) {
       console.log("onMount error: ", error);
       return;
     }
 
-    pollTimer = setInterval(async () => {
-      console.log("Polling API /poll-point");
-      try {
-        const result = await axios.get(PUBLIC_SERVER_URL + "/poll-point");
-        maskedPayData = result.data;
-        scanMaskedPayData();
-      } catch (error) {
-        console.error("Error in pollTimer: ", error);
-      }
-    }, 1000);
+    // Get the Sync Token from the server
+    try {
+      console.log(`onMount getting Sync Token for callSid: ${callSid}`);
+
+      const response = await fetch(PUBLIC_SERVER_URL + "/sync/getSyncToken", {
+        method: "POST",
+        body: JSON.stringify({
+          callSid,
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      // console.log("onMount response: ", response);
+      console.log("onMount response: ", response);
+      syncToken = await response.json();
+      console.log("onMount sync token: ", syncToken);
+    } catch (error) {
+      console.log("onMount sync token error: ", error);
+      return;
+    }
+
+    try {
+      syncClient = new SyncClient(syncToken, {});
+      payMap = await syncClient.map("payMap");
+      console.log(`Client payMap hooked to Sync: ${payMap.sid}`);
+
+      // Add Event Listener for data changes. Update the card data
+      payMap.on("itemUpdated", (args) => {
+        const itemData = args.item.data;
+        console.log("itemData: ", itemData);
+
+        // // Update the local variables
+        maskedPayData.paymentCardNumber = itemData.PaymentCardNumber;
+        maskedPayData.paymentCardType = itemData.PaymentCardType;
+        maskedPayData.securityCode = itemData.SecurityCode;
+        maskedPayData.expirationDate = itemData.ExpirationDate;
+      });
+    } catch (error) {}
   });
 
   onDestroy(() => {
     // When navigating away from the page, stop the poll timer
-    clearInterval(pollTimer);
   });
 </script>
 
-<h2>{callSid}</h2>
+<Container>
+  <Card theme="dark">
+    <CardHeader>
+      <CardTitle>Twilio Pay</CardTitle>
+    </CardHeader>
+    <CardBody>
+      <Container>
+        <InputGroup class="mb-3">
+          <InputGroupText style="width: 200px;">Masked Card:</InputGroupText>
+          <InputGroupText style="width: 200px;">{maskedPayData.paymentCardNumber}</InputGroupText>
+          <Button color="danger" on:click={clearCard}>Clear</Button>
+        </InputGroup>
+        <InputGroup class="mb-3">
+          <InputGroupText style="width: 200px;">Masked CVC:</InputGroupText>
+          <InputGroupText style="width: 200px;">{maskedPayData.SecurityCode}</InputGroupText>
+          <Button color="danger" on:click={clearCVC}>Clear</Button>
+        </InputGroup>
+        <InputGroup class="mb-3">
+          <InputGroupText style="width: 200px;">Masked Exp. Date:</InputGroupText>
+          <InputGroupText style="width: 200px;">{maskedPayData.ExpirationDate}</InputGroupText>
+          <Button color="danger" on:click={clearDate}>Clear</Button>
+        </InputGroup>
+      </Container>
 
-<div class="div">
-  <div class="div-2">Twilio Pay</div>
-  <!-- <div class="div-3">Card Number</div> -->
-  <h3 class="div-3">Masked card: {maskedPayData.PaymentCardNumber}</h3>
-  <h3 class="div-4">Masked CVC: {maskedPayData.SecurityCode}</h3>
-  <h3 class="div-5">Exp. Date: {maskedPayData.ExpirationDate}</h3>
-  <div class="div-6">
-    <button class="btn-submit" disabled={!canSubmit} on:click={submit}>Submit</button>
-    <button class="btn-cancel" on:click={cancel}>Cancel</button>
-  </div>
-  <div class="div-9">Token</div>
-</div>
+      <Button color="success" disabled={!canSubmit} on:click={submit}>Submit</Button>
+      <Button color="danger" on:click={cancelSubmit}>Cancel</Button>
+    </CardBody>
+    <CardFooter></CardFooter>
+  </Card>
 
-<style>
-  .div {
-    background-color: #fff;
-    display: flex;
-    max-width: 480px;
-    width: 100%;
-    flex-direction: column;
-    font-size: 12px;
-    color: var(--text-neutral-color-text-neutral, #030b5d);
-    font-weight: 600;
-    margin: 0 auto;
-    padding: 31px 34px 80px;
-  }
-  .div-2 {
-    color: var(--text-color-text, #121c2d);
-    font-variant-numeric: lining-nums tabular-nums;
-    font-feature-settings:
-      "clig" off,
-      "liga" off;
-    font:
-      800 64px Twilio Sans Display,
-      -apple-system,
-      Roboto,
-      Helvetica,
-      sans-serif;
-  }
-  .div-3 {
-    font-variant-numeric: lining-nums tabular-nums;
-    font-feature-settings:
-      "clig" off,
-      "liga" off;
-    font-family:
-      Twilio Sans Text,
-      sans-serif;
-    justify-content: center;
-    align-items: center;
-    border-radius: var(--border-radius-border-radius-20, 4px);
-    border-color: rgba(204, 228, 255, 1);
-    border-style: solid;
-    border-width: 1px;
-    background-color: var(--background-neutral-color-background-neutral-weakest, #f4f9ff);
-    margin-top: 78px;
-    text-align: center;
-    line-height: 133%;
-    padding: 4px 8px;
-  }
-  .div-4 {
-    font-variant-numeric: lining-nums tabular-nums;
-    font-feature-settings:
-      "clig" off,
-      "liga" off;
-    font-family:
-      Twilio Sans Text,
-      sans-serif;
-    justify-content: center;
-    align-items: center;
-    border-radius: var(--border-radius-border-radius-20, 4px);
-    border-color: rgba(204, 228, 255, 1);
-    border-style: solid;
-    border-width: 1px;
-    background-color: var(--background-neutral-color-background-neutral-weakest, #f4f9ff);
-    margin-top: 37px;
-    white-space: nowrap;
-    text-align: center;
-    line-height: 133%;
-    padding: 4px 8px;
-  }
-  .div-5 {
-    font-variant-numeric: lining-nums tabular-nums;
-    font-feature-settings:
-      "clig" off,
-      "liga" off;
-    font-family:
-      Twilio Sans Text,
-      sans-serif;
-    justify-content: center;
-    align-items: center;
-    border-radius: var(--border-radius-border-radius-20, 4px);
-    border-color: rgba(204, 228, 255, 1);
-    border-style: solid;
-    border-width: 1px;
-    background-color: var(--background-neutral-color-background-neutral-weakest, #f4f9ff);
-    margin-top: 37px;
-    text-align: center;
-    line-height: 133%;
-    padding: 4px 8px;
-  }
-  .div-6 {
-    align-self: center;
-    display: flex;
-    margin-top: 59px;
-    width: 221px;
-    max-width: 100%;
-    gap: 20px;
-    font-size: 14px;
-    color: var(--text-inverse-color-text-inverse, #fff);
-    white-space: nowrap;
-    text-align: center;
-    line-height: 143%;
-    justify-content: space-between;
-  }
-
-  .btn-submit {
-    font-variant-numeric: lining-nums tabular-nums;
-    font-feature-settings:
-      "clig" off,
-      "liga" off;
-    font-family: "Twilio Sans Text", sans-serif;
-    justify-content: center;
-    background-color: #006dfa;
-    color: #fff;
-    white-space: nowrap;
-    text-align: center;
-    line-height: 143%;
-    padding: 8px 12px;
-    border: 1px solid rgba(0, 109, 250, 1);
-    border-radius: 4px;
-    align-self: end;
-    margin-top: 22px;
-    cursor: pointer;
-  }
-
-  .btn-cancel {
-    font-variant-numeric: lining-nums tabular-nums;
-    font-feature-settings:
-      "clig" off,
-      "liga" off;
-    font-family: "Twilio Sans Text", sans-serif;
-    justify-content: center;
-    background-color: #c72323;
-    color: white;
-    white-space: nowrap;
-    text-align: center;
-    line-height: 143%;
-    padding: 8px 12px;
-    border: 1px solid rgba(0, 109, 250, 1);
-    border-radius: 4px;
-    align-self: end;
-    margin-top: 22px;
-    cursor: pointer;
-  }
-  .div-9 {
-    font-variant-numeric: lining-nums tabular-nums;
-    font-feature-settings:
-      "clig" off,
-      "liga" off;
-    font-family:
-      Twilio Sans Text,
-      sans-serif;
-    justify-content: center;
-    align-items: center;
-    border-radius: var(--border-radius-border-radius-20, 4px);
-    border-color: rgba(204, 228, 255, 1);
-    border-style: solid;
-    border-width: 1px;
-    background-color: var(--background-neutral-color-background-neutral-weakest, #f4f9ff);
-    margin-top: 51px;
-    white-space: nowrap;
-    text-align: center;
-    line-height: 133%;
-    padding: 4px 8px;
-  }
-</style>
+  <h2>callSid: {callSid}</h2>
+  <h2>paymentSid: {paymentSid}</h2>
+</Container>

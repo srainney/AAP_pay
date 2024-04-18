@@ -1,14 +1,23 @@
 <script>
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
+  import { PUBLIC_SERVER_URL, PUBLIC_PAYMENT_CURRENCY, PUBLIC_PAYMENT_CAPTURE_ORDER } from "$env/static/public";
+
+  // Styles:
   import {
-    PUBLIC_SERVER_URL,
-    PUBLIC_PAYMENT_CONNECTOR,
-    PUBLIC_PAYMENT_CURRENCY,
-    PUBLIC_PAYMENT_TOKEN_TYPE,
-    PUBLIC_PAYMENT_CAPTURE_ORDER,
-    PUBLIC_TWILIO_TOKEN,
-  } from "$env/static/public";
+    Container,
+    Card,
+    CardBody,
+    CardFooter,
+    CardHeader,
+    CardSubtitle,
+    CardText,
+    CardTitle,
+    InputGroup,
+    InputGroupText,
+    Input,
+    Button,
+  } from "@sveltestrap/sveltestrap";
 
   let callSid = "";
   let paymentSid = "";
@@ -31,9 +40,11 @@
       try {
         let bodyData = {
           callSid: callSid,
+          currency: PUBLIC_PAYMENT_CURRENCY,
+          chargeAmount: "0",
         };
 
-        const response = await fetch("/payment/startCapture", {
+        const response = await fetch(PUBLIC_SERVER_URL + "/aap/startCapture", {
           method: "POST",
           body: JSON.stringify(bodyData),
           headers: {
@@ -58,108 +69,34 @@
       alert("Please enter a valid Call SID");
     }
   };
+
+  const clearSid = function () {
+    callSid = "";
+  };
 </script>
 
-<main class="main-content">
-  <h1 class="title">Twilio Pay</h1>
-  <label for="callSID" class="visually-hidden" placeholder={callSid}>Call SID</label>
-  <input
-    class="input-field"
-    id="callSID"
-    type="text"
-    placeholder="CAxxxxxxxxxx"
-    aria-label="Call SID"
-    bind:value={callSid}
-  />
-  <p class="description">Paste the Call SID here & click Capture</p>
-  <button on:click={startCapture} class="capture-button" tabindex="0">Capture</button>
-  {#if showPleaseWait}
-    <h2>Starting Capture. Please wait ...........</h2>
-  {/if}
-</main>
+<Container sm>
+  <Card theme="dark">
+    <CardHeader>
+      <CardTitle>Twilio Pay</CardTitle>
+    </CardHeader>
+    <CardBody>
+      <InputGroup>
+        <InputGroupText>
+          <label for="callSID" placeholder={callSid}>Call SID</label>
+        </InputGroupText>
 
-<style>
-  .main-content {
-    display: flex;
-    max-width: 326px;
-    flex-direction: column;
-    font-size: 14px;
-    color: #121c2d;
-    font-weight: 600;
-    padding: 20px;
-  }
+        <Input id="callSID" type="text" placeholder="CAxxxxxxxxxx" aria-label="Call SID" bind:value={callSid} />
+        <Button color="danger" on:click={clearSid}>Clear</Button>
+      </InputGroup>
 
-  .title {
-    font-variant-numeric: lining-nums tabular-nums;
-    font-feature-settings:
-      "clig" off,
-      "liga" off;
-    width: 100%;
-    font:
-      800 64px "Twilio Sans Display",
-      -apple-system,
-      Roboto,
-      Helvetica,
-      sans-serif;
-  }
-
-  .input-field {
-    font-variant-numeric: lining-nums tabular-nums;
-    font-feature-settings:
-      "clig" off,
-      "liga" off;
-    font-family: "Twilio Sans Text", sans-serif;
-    font-style: italic;
-    background-color: #fff;
-    color: #606b85;
-    font-weight: 400;
-    line-height: 143%;
-    justify-content: center;
-    padding: 8px 12px;
-    border: 1px solid rgba(136, 145, 170, 1);
-    border-radius: 4px;
-  }
-
-  .description {
-    color: #606b85;
-    font-variant-numeric: lining-nums tabular-nums;
-    font-feature-settings:
-      "clig" off,
-      "liga" off;
-    font-family: "Twilio Sans Text", sans-serif;
-    font-weight: 400;
-    line-height: 143%;
-    margin-top: 8px;
-  }
-
-  .capture-button {
-    font-variant-numeric: lining-nums tabular-nums;
-    font-feature-settings:
-      "clig" off,
-      "liga" off;
-    font-family: "Twilio Sans Text", sans-serif;
-    justify-content: center;
-    background-color: #006dfa;
-    color: #fff;
-    white-space: nowrap;
-    text-align: center;
-    line-height: 143%;
-    padding: 8px 12px;
-    border: 1px solid rgba(0, 109, 250, 1);
-    border-radius: 4px;
-    align-self: end;
-    margin-top: 22px;
-    cursor: pointer;
-  }
-
-  .visually-hidden {
-    border: 0;
-    clip: rect(0 0 0 0);
-    height: 1px;
-    margin: -1px;
-    overflow: hidden;
-    padding: 0;
-    position: absolute;
-    width: 1px;
-  }
-</style>
+      <p>Paste the Call SID here & click Capture</p>
+      <Button color="success" on:click={startCapture} tabindex="0">Capture</Button>
+    </CardBody>
+    <CardFooter>
+      {#if showPleaseWait}
+        <h4>Starting Capture. Please wait ...........</h4>
+      {/if}
+    </CardFooter>
+  </Card>
+</Container>
