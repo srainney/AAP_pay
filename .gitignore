@@ -2,3 +2,4 @@ JSClient/src/.env
 .DS_Store
 Client/pnpm-lock.yaml
 Server/pnpm-lock.yaml
+Server/pnpm-lock.yaml
