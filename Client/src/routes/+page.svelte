@@ -21,6 +21,16 @@
 
   let callSid = "";
   let paymentSid = "";
+  let captureButtonDisabled = true;
+
+  // Reactively check callSid entered follows the following pattern: CAxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx and then enable the Capture button
+  $: if (callSid.length > 0) {
+    if (/^CA[0-9a-f]{32}$/.test(callSid)) {
+      captureButtonDisabled = false;
+    } else {
+      captureButtonDisabled = true;
+    }
+  }
 
   // Convert Capture Order string to an Array, removing whitespace
   const captureOrderArray = PUBLIC_PAYMENT_CAPTURE_ORDER.split(",").map((item) => item.trim());
@@ -32,41 +42,34 @@
   });
 
   const startCapture = async function () {
-    // navigate to payments page
-    console.info(`#######################  startCapture callSid: ${callSid}`);
-    if (callSid.length > 0) {
-      // console.log(`startCapture CallSid length: ${callSid.length}`);
-      showPleaseWait = true;
-      try {
-        let bodyData = {
-          callSid: callSid,
-          currency: PUBLIC_PAYMENT_CURRENCY,
-          chargeAmount: "0",
-        };
+    // Navigate to payments page
+    showPleaseWait = true;
+    try {
+      let bodyData = {
+        callSid: callSid,
+        currency: PUBLIC_PAYMENT_CURRENCY,
+        chargeAmount: "0",
+      };
 
-        const response = await fetch(PUBLIC_SERVER_URL + "/aap/startCapture", {
-          method: "POST",
-          body: JSON.stringify(bodyData),
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
+      const response = await fetch(PUBLIC_SERVER_URL + "/aap/startCapture", {
+        method: "POST",
+        body: JSON.stringify(bodyData),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
-        const responseJSON = await response.json();
-        paymentSid = responseJSON.sid;
-        // console.log(`startCapture paymentSid: ${paymentSid}`);
+      const responseJSON = await response.json();
+      paymentSid = responseJSON.sid;
 
-        if (paymentSid) {
-          // Navigate to the payment page
-          goto(`/payment?call-sid=${callSid}&payment-sid=${paymentSid}`);
-        } else {
-          alert(`Could not get a payment SID value for call SID: ${callSid}`);
-        }
-      } catch (error) {
-        console.error(`startCapture Error: ${error}`);
+      if (paymentSid) {
+        // Navigate to the payment page
+        goto(`/payment?call-sid=${callSid}&payment-sid=${paymentSid}`);
+      } else {
+        alert(`Could not get a payment SID value for call SID: ${callSid}`);
       }
-    } else {
-      alert("Please enter a valid Call SID");
+    } catch (error) {
+      console.error(`startCapture Error: ${error}`);
     }
   };
 
@@ -91,7 +94,7 @@
       </InputGroup>
 
       <p>Paste the Call SID here & click Capture</p>
-      <Button color="success" on:click={startCapture} tabindex="0">Capture</Button>
+      <Button color="success" disabled={captureButtonDisabled} on:click={startCapture} tabindex="0">Capture</Button>
     </CardBody>
     <CardFooter>
       {#if showPleaseWait}
