@@ -18,32 +18,32 @@
     Button,
   } from "@sveltestrap/sveltestrap";
 
-  let callSid = null;
-  let paymentSid = null;
-
-  let myParameter = null;
-  beforeUpdate(() => {
-    callSid = $page.url.searchParams.get("call-sid");
-    paymentSid = $page.url.searchParams.get("payment-sid");
-  });
-
   // Convert Capture Order string to an Array, removing whitespace
   let captureOrder = PUBLIC_PAYMENT_CAPTURE_ORDER.split(",").map((item) => item.trim());
 
-  let startedCapturing = false;
-  let canSubmit = false;
+  let callSid = "";
+  let paymentSid = "";
   let maskedPayData = {
     PaymentCardNumber: "-",
     PaymentCardType: "-",
     ExpirationDate: "-",
     SecurityCode: "-",
-    Required: "payment-card-number,expiration-date,security-code",
   };
 
   // Sync Client
   let syncClient = null;
   let syncToken = "";
   let payMap = null;
+
+  // Page visual control attributes
+  let startedCapturing = false;
+  let canSubmit = false;
+
+  // This is required to be able to deploy the page as a static site on Twilio Functions.
+  beforeUpdate(() => {
+    callSid = $page.url.searchParams.get("call-sid");
+    paymentSid = $page.url.searchParams.get("payment-sid");
+  });
 
   // Handle Cancel click
   const cancelSubmit = async function () {
@@ -74,7 +74,6 @@
   // Handle the Submit click
   const submit = async function () {
     canSubmit = false;
-    clearInterval(pollTimer);
     try {
       console.log("Submit clicked");
       // Now submit the card data
@@ -105,45 +104,24 @@
 
   // This function scans the received maskedPayData and performs a few operations:
   // 1) Checks if the Required attribute is present
-  // 2) If the Required attribute is not present and the capture has started, it stops the polling
+  // 2) If the Required attribute is not present and the capture has started, it stops the sync
   // 3) When the "required" string length is less than the captureOrder array length, it updates the captureOrder array, removing the first element and calling the next capture API
   const scanMaskedPayData = async function () {
-    console.log("scanMaskedPayData maskedPayData: ", maskedPayData);
     // If there is a required attribute, start capturing
     if (maskedPayData.Required) {
       // Set the capturing flag
       startedCapturing = true;
 
-      console.log(
-        "startedCapturing: ",
-        startedCapturing,
-        ", scanMaskedPayData maskedPayData.Required: ",
-        maskedPayData.Required,
-        ", maskedPayData.Required.length: ",
-        maskedPayData.Required.length
-      );
-
       // Convert Capture Order string to an Array, removing whitespace
       const requiredArray = maskedPayData.Required.split(",").map((item) => item.trim());
-      console.log("scanMaskedPayData requiredArray: ", requiredArray);
 
-      // console.log("maskedPayData.Required: ", maskedPayData.Required);
-      console.log("scanMaskedPayData captureOrder: ", captureOrder);
-      console.log(
-        "scanMaskedPayData requiredArray.length: ",
-        requiredArray.length,
-        "captureOrder.length: ",
-        captureOrder.length
-      );
-
+      // If the requiredArray length is less than the captureOrder array length, call the next capture API
       if (requiredArray.length < captureOrder.length) {
-        console.log("scanMaskedPayData requiredArray.length < captureOrder.length");
         // Remove the first element from the captureOrder array
         captureOrder.shift();
-        console.log("scanMaskedPayData captureOrder: ", captureOrder);
-        // Call the next capture API
 
         try {
+          console.log(`Call the next capture API with ##### ${captureOrder[0]} #####`);
           const response = await fetch(PUBLIC_SERVER_URL + "/aap/changeCapture", {
             method: "POST",
             body: JSON.stringify({
@@ -156,31 +134,26 @@
             },
           });
           const responseJSON = await response.json();
-          console.log("scanMaskedPayData response: ", responseJSON.data);
+          console.log("scanMaskedPayData next capture responseJSON: ", JSON.stringify(responseJSON, null, 4));
         } catch (error) {
           console.error("Error in scanMaskedPayData: ", error);
         }
-      } else {
-        console.log("scanMaskedPayData requiredArray.length >= captureOrder.length");
       }
     } else {
       console.log("scanMaskedPayData maskedPayData.Required is not present");
-      console.log("startedCapturing: ", startedCapturing);
       if (startedCapturing) {
-        console.log("scanMaskedPayData startedCapturing is true and stopping polling");
+        console.log("scanMaskedPayData startedCapturing is true and stop sync update");
         canSubmit = true;
-        // clearInterval(pollTimer);
+        // Stop Sync. TODO: This is to stop a bug where Sync just keeps updating the maskedPayData
+        payMap.removeAllListeners(["itemUpdated"]);
       }
     }
   };
 
-  // Set up timer to poll API every 100ms onMount
   onMount(async () => {
     // Now start capturing the card
     try {
-      console.log("onMount captureOrder[0]: ", captureOrder[0]);
-
-      // Set capture to first itme in array TODO: check if we actually need this?
+      // Set capture to first item in capture order array
       const response = await fetch(PUBLIC_SERVER_URL + "/aap/changeCapture", {
         method: "POST",
         body: JSON.stringify({
@@ -192,10 +165,8 @@
           "Content-Type": "application/json",
         },
       });
-      // console.log("onMount response: ", response);
-      console.log("onMount response: ", response);
       const responseJSON = await response.json();
-      console.log("onMount responseJSON: ", JSON.stringify(responseJSON, null, 4));
+      console.log("onMount changeCapture responseJSON: ", JSON.stringify(responseJSON, null, 4));
     } catch (error) {
       console.log("onMount error: ", error);
       return;
@@ -203,8 +174,6 @@
 
     // Get the Sync Token from the server
     try {
-      console.log(`onMount getting Sync Token for callSid: ${callSid}`);
-
       const response = await fetch(PUBLIC_SERVER_URL + "/sync/getSyncToken", {
         method: "POST",
         body: JSON.stringify({
@@ -214,10 +183,7 @@
           "Content-Type": "application/json",
         },
       });
-      // console.log("onMount response: ", response);
-      console.log("onMount response: ", response);
       syncToken = await response.json();
-      console.log("onMount sync token: ", syncToken);
     } catch (error) {
       console.log("onMount sync token error: ", error);
       return;
@@ -230,20 +196,22 @@
 
       // Add Event Listener for data changes. Update the card data
       payMap.on("itemUpdated", (args) => {
-        const itemData = args.item.data;
-        console.log("itemData: ", itemData);
+        // assign all values from args.item.data to maskedPayData using a spread operator
+        maskedPayData = { ...args.item.data };
 
-        // // Update the local variables
-        maskedPayData.paymentCardNumber = itemData.PaymentCardNumber;
-        maskedPayData.paymentCardType = itemData.PaymentCardType;
-        maskedPayData.securityCode = itemData.SecurityCode;
-        maskedPayData.expirationDate = itemData.ExpirationDate;
+        // console.log(`itemUpdated maskedPayData ${Date.now().toLocaleString}: ${JSON.stringify(maskedPayData, null, 4)}`);
+        // Check if we progress the capture order
+        scanMaskedPayData();
       });
     } catch (error) {}
   });
 
   onDestroy(() => {
-    // When navigating away from the page, stop the poll timer
+    // Remove the payMap event listener
+    if (payMap) {
+      payMap.close();
+      payMap.removeAllListeners(["itemUpdated"]);
+    }
   });
 </script>
 
