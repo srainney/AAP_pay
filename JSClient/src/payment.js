@@ -33,7 +33,7 @@ let maskedPayData = {
 // 2) If the Required attribute is not present and the capture has started, it stops the polling
 // 3) When the "required" string length is less than the captureOrder array length, it updates the captureOrder array, removing the first element and calling the next capture API
 const scanMaskedPayData = async function () {
-    console.log("scanMaskedPayData maskedPayData: ", maskedPayData);
+    console.log("scanMaskedPayData maskedPayData JSClient: ", maskedPayData);
     // If there is a required attribute, start capturing
     if (maskedPayData.Required) {
         // Set the capturing flag

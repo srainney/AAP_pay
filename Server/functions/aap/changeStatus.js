@@ -1,6 +1,6 @@
 exports.handler = async (context, event, callback) => {
 
-  // Add CORS handling headers
+  // Add CORS handling headers. TODO: Remove for production deployment
   const twilioResponse = new Twilio.Response();
 
   twilioResponse.appendHeader("Access-Control-Allow-Origin", "*");

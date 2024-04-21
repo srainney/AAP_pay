@@ -45,15 +45,19 @@ exports.handler = async (context, event, callback) => {
 
   // Update it under a try/catch and if the Item does not exist, create it first and then add item
   try {
+    // Delete the HTTP headers
+    delete event.request;
+
     await restClient.sync.services(context.PAY_SYNC_SERVICE_SID)
       .syncMaps(context.SYNC_PAY_MAP_NAME)
       .syncMapItems(event.Sid)
       .update({
         data: event
       });
-    console.log(`Updated Pay Map: ${event.Sid}`);
+    // console.log(`Updated Pay Map: ${event.Sid}`);
+    console.log(`Updated Pay Map ${Date.now().toLocaleString}: ${event.Sid} and data: ${JSON.stringify(event, null, 4)}`);
   } catch (error) {
-    console.log("Item does not exist, so create it");
+    // console.log("Item does not exist, so create it");
     try {
       await restClient.sync.services(context.PAY_SYNC_SERVICE_SID)
         .syncMaps(context.SYNC_PAY_MAP_NAME)
@@ -68,7 +72,7 @@ exports.handler = async (context, event, callback) => {
       console.error(`Error creating Pay Map: ${error}`);
       return callback(`Error creating Pay Map: ${error}`);
     }
-    console.log(`Updated Pay Map: ${event.Sid}`);
+    // console.log(`Updated Pay Map: ${event.Sid}`);
     return callback(null, event.Sid);
 
   }

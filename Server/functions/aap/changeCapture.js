@@ -1,10 +1,10 @@
 exports.handler = async (context, event, callback) => {
 
-  // Add CORS handling headers
+  // Add CORS handling headers. TODO: Remove for production deployment
   const twilioResponse = new Twilio.Response();
 
   twilioResponse.appendHeader("Access-Control-Allow-Origin", "*");
-  twilioResponse.appendHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  twilioResponse.appendHeader("Access-Control-Allow-Methods", "GET, POST,OPTIONS");
   twilioResponse.appendHeader('Access-Control-Allow-Headers', 'Content-Type');
   twilioResponse.appendHeader("Content-Type", "application/json");
 
@@ -27,9 +27,12 @@ exports.handler = async (context, event, callback) => {
         // statusCallback: "/sync/paySyncUpdate",
         statusCallback: context.SERVER_URL + "/sync/paySyncUpdate",
       });
-    console.log(`Change capture paymentSession: ${JSON.stringify(paymentSession, null, 4)}`);
+    // console.log(`Change capture paymentSession: ${JSON.stringify(paymentSession, null, 4)}`);
 
     twilioResponse.setBody(paymentSession);
+
+    console.log(`Changed capture type to ${event.captureType}`);
+
     return callback(null, twilioResponse); // Pay object
   } catch (error) {
     console.log(`Error with changeType for callSID: ${event.callSid} - ${error}`);
