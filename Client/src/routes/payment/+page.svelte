@@ -19,7 +19,7 @@
   } from "@sveltestrap/sveltestrap";
 
   // Convert Capture Order string to an Array, removing whitespace
-  let captureOrder = PUBLIC_PAYMENT_CAPTURE_ORDER.split(",").map((item) => item.trim());
+  let captureOrderArray = PUBLIC_PAYMENT_CAPTURE_ORDER.split(",").map((item) => item.trim());
 
   let callSid = "";
   let paymentSid = "";
@@ -105,7 +105,7 @@
   // This function scans the received maskedPayData and performs a few operations:
   // 1) Checks if the Required attribute is present
   // 2) If the Required attribute is not present and the capture has started, it stops the sync
-  // 3) When the "required" string length is less than the captureOrder array length, it updates the captureOrder array, removing the first element and calling the next capture API
+  // 3) When the "required" string length is less than the captureOrderArray array length, it updates the captureOrderArray array, removing the first element and calling the next capture API
   const scanMaskedPayData = async function () {
     // If there is a required attribute, start capturing
     if (maskedPayData.Required) {
@@ -115,19 +115,19 @@
       // Convert Capture Order string to an Array, removing whitespace
       const requiredArray = maskedPayData.Required.split(",").map((item) => item.trim());
 
-      // If the requiredArray length is less than the captureOrder array length, call the next capture API
-      if (requiredArray.length < captureOrder.length) {
-        // Remove the first element from the captureOrder array
-        captureOrder.shift();
+      // If the requiredArray length is less than the captureOrderArray array length, call the next capture API
+      if (requiredArray.length < captureOrderArray.length) {
+        // Remove the first element from the captureOrderArray array
+        captureOrderArray.shift();
 
         try {
-          console.log(`Call the next capture API with ##### ${captureOrder[0]} #####`);
+          console.log(`Call the next capture API with ##### ${captureOrderArray[0]} #####`);
           const response = await fetch(PUBLIC_SERVER_URL + "/aap/changeCapture", {
             method: "POST",
             body: JSON.stringify({
               callSid,
               paymentSid,
-              captureType: captureOrder[0],
+              captureType: captureOrderArray[0],
             }),
             headers: {
               "Content-Type": "application/json",
@@ -159,7 +159,7 @@
         body: JSON.stringify({
           callSid,
           paymentSid,
-          captureType: captureOrder[0],
+          captureType: captureOrderArray[0],
         }),
         headers: {
           "Content-Type": "application/json",
