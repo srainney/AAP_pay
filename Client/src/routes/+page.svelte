@@ -75,7 +75,7 @@
       const responseJSON = await response.json();
 
       paymentSid = responseJSON.sid;
-      console.log("startCapture: get PAyment SID responseJSON: ", JSON.stringify(responseJSON, null, 4));
+      // console.log("startCapture: get PAyment SID responseJSON: ", JSON.stringify(responseJSON, null, 4));
 
       if (paymentSid) {
         // Now start capturing the payment-card
@@ -93,7 +93,7 @@
             },
           });
           const responseJSON = await response.json();
-          console.log("startCapture: changeCapture responseJSON: ", JSON.stringify(responseJSON, null, 4));
+          // console.log("startCapture: changeCapture responseJSON: ", JSON.stringify(responseJSON, null, 4));
         } catch (error) {
           console.log("onMount error: ", error);
           return;
@@ -111,7 +111,7 @@
             },
           });
           syncToken = await response.json();
-          console.log("startCapture: get Sync Token response: ", JSON.stringify(syncToken, null, 4));
+          // console.log("startCapture: get Sync Token response: ", JSON.stringify(syncToken, null, 4));
 
           // Now hook the client to Sync
           try {
@@ -122,7 +122,7 @@
             // Add Event Listener for data changes. Update the card data
             payMap.on("itemUpdated", (args) => {
               syncData = { ...args.item.data }; // assign all values from args.item.data to syncData using a spread operator
-              console.log("payMap itemUpdated: ", JSON.stringify(syncData, null, 4));
+              // console.log("payMap itemUpdated: ", JSON.stringify(syncData, null, 4));
               // Check if we progress the capture order
               scanMaskedPayData();
             });
@@ -278,7 +278,8 @@
       <Button color="success" disabled={captureButtonDisabled} on:click={startCapture} tabindex="0">Capture</Button>
     </CardBody>
     <CardFooter>
-      <h3>callSid: {callSid}</h3>
+      <h3>Call Sid:</h3>
+      <p>{callSid}</p>
       {#if showPleaseWait}
         <h4>Starting Capture. Please wait ...........</h4>
       {/if}
@@ -314,7 +315,8 @@
       <Button color="danger" on:click={cancelSubmit}>Cancel</Button>
     </CardBody>
     <CardFooter>
-      <h3>paymentSid: {paymentSid}</h3>
+      <h3>Payment Sid:</h3>
+      <p>{paymentSid}</p>
     </CardFooter>
   </Card>
 </Container>
