@@ -3,3 +3,4 @@ JSClient/src/.env
 Client/pnpm-lock.yaml
 Server/pnpm-lock.yaml
 Server/pnpm-lock.yaml
+Server/.env.dev

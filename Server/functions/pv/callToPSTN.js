@@ -8,6 +8,8 @@
  */
 exports.handler = async (context, event, callback) => {
 
+  console.log(`ENV variables: ${JSON.stringify(context)}`);
+
   console.info(`callToPSTN: Dialing ${event.To} with Caller ID ${event.From} for Call SID: ${event.CallSid} with UUI ${event.UUI}`);
 
   const voiceResponse = new Twilio.twiml.VoiceResponse();
