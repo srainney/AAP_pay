@@ -16,6 +16,8 @@ exports.handler = async (context, event, callback) => {
   // Get a reference to the Twilio REST helper library
   const twilioClient = context.getTwilioClient();
 
+  // console.log(`StartCapture: ${event}`);
+
   // Check if there is a call in progress for this callSid, before attempting to start a payment session
   const callResource = await twilioClient.calls(event.callSid).fetch();
   if (callResource.status !== 'in-progress') {
@@ -25,7 +27,8 @@ exports.handler = async (context, event, callback) => {
   // Create the payment session
   const sessionData = {
     idempotencyKey: event.callSid + Date.now().toString(),
-    statusCallback: context.SERVER_URL + "/sync/paySyncUpdate",
+    statusCallback: `${context.SERVER_URL}/sync/paySyncUpdate`,
+    // statusCallback: `/sync/paySyncUpdate`, // This is the default statusCallback, which is being looked at in https://issues.corp.twilio.com/browse/VAUTO-1432
     ...(event.chargeAmount === 0 ? { tokenType: event.tokenType } : {}), // Only include tokenType if chargeAmount is 0
     chargeAmount: event.chargeAmount,
     currency: event.currency,
