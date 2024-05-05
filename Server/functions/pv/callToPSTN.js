@@ -8,10 +8,6 @@
  */
 exports.handler = async (context, event, callback) => {
 
-  console.log(`ENV variables: ${JSON.stringify(context)}`);
-
-  console.info(`callToPSTN: Dialing ${event.To} with Caller ID ${event.From} for Call SID: ${event.CallSid} with UUI ${event.UUI}`);
-
   const voiceResponse = new Twilio.twiml.VoiceResponse();
 
   let to = event.To.match(/^sip:((\+)?[0-9]+)@(.*)/)[1];  // Extract the number from the SIP URI
@@ -19,12 +15,10 @@ exports.handler = async (context, event, callback) => {
 
   // Extract the SIP side UUI reference
   const UUI = event["SipHeader_User-to-User"] || Date.now();
-  console.log(`OutboundHandler: UUI: ####${UUI}####`);
 
   try {
     console.info(`Dialing ${to} with Caller ID ${from} for Call SID: ${event.CallSid} with UUI ${UUI}`);
     const dial = voiceResponse.dial({ callerId: from });
-    console.log(`Dialing {dial} ${dial}`);
     dial.number(
       {
         // Only update Sync when call is answered
@@ -34,7 +28,6 @@ exports.handler = async (context, event, callback) => {
       },
       to);
 
-    console.log(`Dial set up`);
     return callback(null, voiceResponse);
   } catch (error) {
     return callback(`Error with callToPSTN: ${error}`);
