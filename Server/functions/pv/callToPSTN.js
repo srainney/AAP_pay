@@ -10,20 +10,20 @@ exports.handler = async (context, event, callback) => {
 
   const voiceResponse = new Twilio.twiml.VoiceResponse();
 
-  let to = event.To.match(/^sip:((\+)?[0-9]+)@(.*)/)[1];  // Extract the number from the SIP URI
-  let from = event.From.match(/^sip:((\+)?[0-9]+)@(.*)/)[1]; // Extract the number from the SIP URI
+  let to = event.To.match(/^sip:((\+)?[0-9]+)@(.*)/)[1];  // Extract the +E.164 number from the SIP URI
+  let from = event.From.match(/^sip:((\+)?[0-9]+)@(.*)/)[1]; // Extract the +E.164 number from the SIP URI
 
   // Extract the SIP side UUI reference
-  const UUI = event["SipHeader_User-to-User"] || Date.now();
+  const UUI = event["SipHeader_x-inin-cnv"] || Date.now();
 
   try {
-    console.info(`Dialing ${to} with Caller ID ${from} for Call SID: ${event.CallSid} with UUI ${UUI}`);
-    const dial = voiceResponse.dial({ callerId: from });
-    dial.number(
+    // console.info(`Dialling ${to} with Caller ID ${from} for Call SID: ${event.CallSid} with UUI ${UUI}`);
+
+    voiceResponse.dial({ callerId: from }).number(
       {
         // Only update Sync when call is answered
         statusCallbackEvent: 'answered',
-        statusCallback: context.SERVER_URL + `/sync/uuiSyncUpdate?CallDirection=toPSTN&UUI=${UUI}`,
+        statusCallback: `/sync/uuiSyncUpdate?CallDirection=toPSTN&UUI=${UUI}`,
         statusCallbackMethod: 'POST'
       },
       to);
