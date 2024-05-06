@@ -29,6 +29,8 @@ exports.handler = async (context, event, callback) => {
     postalCode: context.INCLUDE_POSTAL_CODE
   }
 
+  console.log(`Starting payment session for callSID: ${event.callSid} with data: ${JSON.stringify(sessionData)}`);
+
   // Now create the payment session
   try {
     const paymentSession = await twilioClient.calls(event.callSid)
