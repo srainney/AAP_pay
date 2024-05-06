@@ -57,11 +57,32 @@
     // showPleaseWait = false;
   });
 
+  const changeCaptureType = async function () {
+    try {
+      console.log(`Call the next capture API with ##### ${captureOrderArray[0]} #####`);
+      const response = await fetch(PUBLIC_SERVER_URL + "/aap/changeCapture", {
+        method: "POST",
+        body: JSON.stringify({
+          callSid,
+          paymentSid,
+          captureType: captureOrderArray[0],
+        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const responseJSON = await response.json();
+      // console.log("scanMaskedPayData next capture responseJSON: ", JSON.stringify(responseJSON, null, 4));
+    } catch (error) {
+      console.error("Error in changeCaptureType: ", error);
+    }
+  };
+
   const startCapture = async function () {
     showPleaseWait = true;
 
     try {
-      const response = await fetch(PUBLIC_SERVER_URL + "/aap/startCapture", {
+      const response = await fetch(`${PUBLIC_SERVER_URL}/aap/startCapture`, {
         method: "POST",
         body: JSON.stringify({
           callSid: callSid,
@@ -75,33 +96,11 @@
       const responseJSON = await response.json();
 
       paymentSid = responseJSON.sid;
-      // console.log("startCapture: get PAyment SID responseJSON: ", JSON.stringify(responseJSON, null, 4));
 
       if (paymentSid) {
-        // Now start capturing the payment-card
-        try {
-          // Set capture to first item in capture order array
-          const response = await fetch(PUBLIC_SERVER_URL + "/aap/changeCapture", {
-            method: "POST",
-            body: JSON.stringify({
-              callSid,
-              paymentSid,
-              captureType: captureOrderArray[0],
-            }),
-            headers: {
-              "Content-Type": "application/json",
-            },
-          });
-          const responseJSON = await response.json();
-          // console.log("startCapture: changeCapture responseJSON: ", JSON.stringify(responseJSON, null, 4));
-        } catch (error) {
-          console.log("onMount error: ", error);
-          return;
-        }
-
         // Get the Sync Token from the server
         try {
-          const response = await fetch(PUBLIC_SERVER_URL + "/sync/getSyncToken", {
+          const response = await fetch(`${PUBLIC_SERVER_URL}/sync/getSyncToken`, {
             method: "POST",
             body: JSON.stringify({
               callSid,
@@ -112,12 +111,13 @@
           });
           syncToken = await response.json();
           // console.log("startCapture: get Sync Token response: ", JSON.stringify(syncToken, null, 4));
+          console.log(`Sync Token: received`);
 
           // Now hook the client to Sync
           try {
             syncClient = new SyncClient(syncToken, {});
             payMap = await syncClient.map("payMap");
-            console.log(`Client payMap hooked to Sync: ${payMap.sid}`);
+            console.log(`Client payMap hooked to Sync: ${payMap.sid} & paymenbtSID: ${paymentSid}`);
 
             // Add Event Listener for data changes. Update the card data
             payMap.on("itemUpdated", (args) => {
@@ -126,6 +126,10 @@
               // Check if we progress the capture order
               scanMaskedPayData();
             });
+
+            // Now start capturing the payment-card. Set capture to first item in capture order array
+            await changeCaptureType();
+
             showPleaseWait = false;
             captureButtonDisabled = true;
           } catch (error) {
@@ -152,7 +156,7 @@
   const cancelSubmit = async function () {
     try {
       console.log("Cancel clicked");
-      const response = await fetch(PUBLIC_SERVER_URL + "/aap/changeStatus", {
+      const response = await fetch(`${PUBLIC_SERVER_URL}/aap/changeStatus`, {
         method: "POST",
         body: JSON.stringify({
           callSid,
@@ -166,7 +170,6 @@
       const responseJSON = await response.json();
       console.log("Cancel response: ", responseJSON.data);
     } catch (error) {
-      // Log the error
       console.error("Error in Cancel: ", error);
     }
   };
@@ -175,9 +178,8 @@
   const submit = async function () {
     canSubmit = false;
     try {
-      console.log("Submit clicked");
       // Now submit the card data
-      const response = await fetch(PUBLIC_SERVER_URL + "/aap/changeStatus", {
+      const response = await fetch(`${PUBLIC_SERVER_URL}/aap/changeStatus`, {
         method: "POST",
         body: JSON.stringify({
           callSid,
@@ -188,19 +190,41 @@
           "Content-Type": "application/json",
         },
       });
+      console.log("Submit response: ", response);
       const responseJSON = await response.json();
-      console.log("Submit response: ", responseJSON.data);
+      console.log("submit responseJSON: ", JSON.stringify(responseJSON, null, 4));
     } catch (error) {
       // Log the error
       console.error("Error in submit: ", error);
     }
   };
 
-  const clearCard = function () {};
+  const clearCard = function () {
+    if (captureOrderArray[0] !== "payment-card-number") {
+      // Add item back to front of array
+      captureOrderArray[0].unshift("payment-card-number");
+      console.log("clearCard captureOrderArray: ", captureOrderArray);
+    }
+    changeCaptureType();
+  };
 
-  const clearCVC = function () {};
+  const clearCVC = function () {
+    if (captureOrderArray[0] !== "security-code") {
+      // Add item back to front of array
+      captureOrderArray[0].unshift("security-code");
+      console.log("clearCVC captureOrderArray: ", captureOrderArray);
+    }
+    changeCaptureType();
+  };
 
-  const clearDate = function () {};
+  const clearDate = function () {
+    if (captureOrderArray[0] !== "expiration-date") {
+      // Add item back to front of array
+      captureOrderArray[0].unshift("expiration-date");
+      console.log("clearDate captureOrderArray: ", captureOrderArray);
+    }
+    changeCaptureType();
+  };
 
   // This function scans the received maskedPayData and performs a few operations:
   // 1) Checks if the Required attribute is present
@@ -219,25 +243,7 @@
       if (requiredArray.length < captureOrderArray.length) {
         // Remove the first element from the captureOrderArray array
         captureOrderArray.shift();
-
-        try {
-          console.log(`Call the next capture API with ##### ${captureOrderArray[0]} #####`);
-          const response = await fetch(PUBLIC_SERVER_URL + "/aap/changeCapture", {
-            method: "POST",
-            body: JSON.stringify({
-              callSid,
-              paymentSid,
-              captureType: captureOrderArray[0],
-            }),
-            headers: {
-              "Content-Type": "application/json",
-            },
-          });
-          const responseJSON = await response.json();
-          console.log("scanMaskedPayData next capture responseJSON: ", JSON.stringify(responseJSON, null, 4));
-        } catch (error) {
-          console.error("Error in scanMaskedPayData: ", error);
-        }
+        await changeCaptureType();
       }
     } else {
       console.log("scanMaskedPayData: maskedPayData.Required is not present");
