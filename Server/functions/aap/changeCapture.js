@@ -28,6 +28,7 @@ exports.handler = async (context, event, callback) => {
         // statusCallback: `/sync/paySyncUpdate`,  // This is the default statusCallback, which is being looked at in https://issues.corp.twilio.com/browse/VAUTO-1432
       });
 
+    console.log(`Payment session updated: ${paymentSession.sid}`);
     twilioResponse.setBody(paymentSession);
 
     return callback(null, twilioResponse); // Pay Object

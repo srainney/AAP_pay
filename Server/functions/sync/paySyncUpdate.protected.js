@@ -54,8 +54,6 @@ exports.handler = async (context, event, callback) => {
       .update({
         data: event
       });
-    // console.log(`Updated Pay Map: ${event.Sid}`);
-    console.log(`Updated Pay Map ${Date.now().toLocaleString}: ${event.Sid} and data: ${JSON.stringify(event, null, 4)}`);
   } catch (error) {
     // console.log("Item does not exist, so create it");
     try {
@@ -72,7 +70,6 @@ exports.handler = async (context, event, callback) => {
       console.error(`Error creating Pay Map: ${error}`);
       return callback(`Error creating Pay Map: ${error}`);
     }
-    // console.log(`Updated Pay Map: ${event.Sid}`);
     return callback(null, event.Sid);
 
   }

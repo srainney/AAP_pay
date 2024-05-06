@@ -13,8 +13,6 @@
  */
 exports.handler = async (context, event, callback) => {
 
-  console.info(`uuiSyncUpdate: Dialing ${event.To} with Caller ID ${event.From} for Call SID: ${event.CallSid} with UUI ${event.UUI}`);
-
   // Add CORS handling headers
   const twilioResponse = new Twilio.Response();
 
@@ -24,23 +22,18 @@ exports.handler = async (context, event, callback) => {
 
   const restClient = context.getTwilioClient();
 
-  // console.log("uuiSyncUpdate: event: ", event);
-
   // Direction of the call
   let PSTNSideCallSid
   if (event.CallDirection === "toPSTN") {
     PSTNSideCallSid = event.CallSid;
-    console.log(`uuiSyncUpdate: toPSTN with PSTNSideCallSid: ${PSTNSideCallSid}`);
   }
 
   if (event.CallDirection == "toSIP") {// toSIP
     PSTNSideCallSid = event.ParentCallSid;
-    console.log(`uuiSyncUpdate: toSIP with PSTNSideCallSid: ${PSTNSideCallSid}`);
   }
 
-  // console.log(`uuiSyncUpdate: This call SID: ${event.CallSid} and ParentCall Sid: ${event.parentCallSid}`);
+  console.log(`uuiSyndUpdate: Updating UUI Sync Map with UUI: ${event.UUI} and PSTN Call SID: ${PSTNSideCallSid}`);
 
-  // console.info(`OutboundSyncUpdate Event Details: ${JSON.stringify(event, null, 4)}`);
   // TODO: Check if the UUI header is passed as part of event, so we can use it directly
   // const uui = "UUI" + Date.now; // DEMO Code to simulate UUI
   const uui = event.UUI;
