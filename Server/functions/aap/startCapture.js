@@ -16,14 +16,6 @@ exports.handler = async (context, event, callback) => {
   // Get a reference to the Twilio REST helper library
   const twilioClient = context.getTwilioClient();
 
-  // console.log(`StartCapture: ${event}`);
-
-  // Check if there is a call in progress for this callSid, before attempting to start a payment session
-  const callResource = await twilioClient.calls(event.callSid).fetch();
-  if (callResource.status !== 'in-progress') {
-    return callback(`startCapture error: Call not in progress for ${event.callSid}`, null);
-  }
-
   // Create the payment session
   const sessionData = {
     idempotencyKey: event.callSid + Date.now().toString(),

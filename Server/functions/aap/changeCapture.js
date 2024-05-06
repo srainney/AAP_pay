@@ -24,18 +24,14 @@ exports.handler = async (context, event, callback) => {
       .update({
         capture: event.captureType,
         idempotencyKey: event.callSid + Date.now().toString(),
-        // statusCallback: "/sync/paySyncUpdate",
-        statusCallback: context.SERVER_URL + "/sync/paySyncUpdate",
+        statusCallback: `${context.SERVER_URL}/sync/paySyncUpdate`,
+        // statusCallback: `/sync/paySyncUpdate`,  // This is the default statusCallback, which is being looked at in https://issues.corp.twilio.com/browse/VAUTO-1432
       });
-    // console.log(`Change capture paymentSession: ${JSON.stringify(paymentSession, null, 4)}`);
 
     twilioResponse.setBody(paymentSession);
 
-    console.log(`Changed capture type to ${event.captureType}`);
-
-    return callback(null, twilioResponse); // Pay object
+    return callback(null, twilioResponse); // Pay Object
   } catch (error) {
-    console.log(`Error with changeType for callSID: ${event.callSid} - ${error}`);
     twilioResponse.setStatusCode(400);
     return callback(twilioResponse.setBody(`Error with changeType for callSID: ${event.callSid} - {error}`));
   }
