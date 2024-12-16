@@ -14,21 +14,20 @@
     <button onclick="startCapture()">Start Capture</button>
 </main> -->
 
-<main class="form-signin w-100 m-auto">
-    <form onsubmit="event.preventDefault(); startCapture();">
-        <img class="mb-4" src="./img/twilio-ar21.svg" alt="" width="240" height="120">
-        <h1 class="h3 mb-3 fw-normal">Twilio Agent Assisted Demo</h1>
+<main class="form-signin w-100 m-auto text-center" style="max-width: 400px;">
+    <form onsubmit="event.preventDefault(); startCapture();" class="text-center">
+        <div class="d-flex justify-content-center mb-4">
+            <img src="./img/twilio-ar21.svg" alt="" width="240" height="120">
+        </div>
+        <h1 class="h3 mb-3 fw-normal text-center">Twilio Agent Assisted Demo</h1>
 
-        <div class="form-floating">
+        <div class="form-floating mb-3">
             <input type="email" class="form-control" id="floatingInput" placeholder="CAxxxxxxxxxxxxx">
             <label for="floatingInput">Paste an active call SID here</label>
         </div>
 
-        <div class="form-check text-start my-3">
-        </div>
         <button class="btn btn-primary w-100 py-2" type="submit">Sign in</button>
     </form>
-</main>
 </main>
 
     <script>
