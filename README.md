@@ -57,32 +57,6 @@ pnpm install
 pnpm dev
 ```
 
-## Client
-
-A Svelte-based client application providing a modern user interface for payment processing.
-
-### Setup
-
-1. Navigate to the Client directory:
-```bash
-cd Client
-```
-
-2. Install dependencies:
-```bash
-pnpm install
-```
-
-3. Create a `.env` file based on `.env copy`:
-```bash
-cp '.env copy' .env
-```
-
-4. Start the development server:
-```bash
-pnpm dev
-```
-
 ## Phone Call Flow
 
 1. **Initiating a Call**
@@ -92,13 +66,6 @@ pnpm dev
 2. **Capturing the Call SID**
    - The Call SID is returned in the response from the call initiation function
    - This SID is used to track the specific call session
-
-3. **Using the Call SID in the Client**
-   - Enter the Call SID in the client application
-   - The client uses this SID to:
-     - Sync with the call status through the Sync service (`functions/sync/paySyncUpdate.protected.js`)
-     - Handle payment capture (`functions/aap/startCapture.js` and `functions/aap/changeCapture.js`)
-     - Monitor call status changes (`functions/aap/changeStatus.js`)
 
 4. **Payment Processing**
    - During the call, payment information is tokenized (`functions/connector/tokenize.js`)
@@ -114,14 +81,10 @@ cd Server && pnpm dev
 
 # Terminal 2 - JSClient
 cd JSClient && pnpm dev
-
-# Terminal 3 - Client
-cd Client && pnpm dev
 ```
 
 2. Access the applications:
 - JSClient: http://localhost:1234 (or the port shown in terminal)
-- Client: http://localhost:5173 (or the port shown in terminal)
 - Server functions will be available at your Twilio Runtime domain
 
 ## Notes
