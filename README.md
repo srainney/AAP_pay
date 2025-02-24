@@ -33,7 +33,7 @@ API_SECRET=your_twilio_api_secret
 
 5. Deploy the serverless functions:
 ```bash
-pnpm deploy
+pnpm run deploy
 ```
 
 ## JSClient
