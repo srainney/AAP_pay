@@ -1,6 +1,6 @@
-# GenesysPay Integration
+# AAP <Pay> Integration
 
-This project consists of three main components that work together to handle payment processing with Genesys and Twilio integration:
+This project consists of three main components that work together to handle payment processing with Twilio Agent Assisted <Pay> integration:
 
 ## Server
 
